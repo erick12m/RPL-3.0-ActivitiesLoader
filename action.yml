@@ -1,0 +1,50 @@
+name: 'Enviar ejercicios a RPL 3.0'
+description: 'Envía archivos modificados/creados en el repositorio a RPL 3.0, a la actividad correspondiente, según el nombre de la carpeta'
+inputs: 
+  rpl_user_name:
+    description: 'Usuario en RPL 3.0'
+    required: true
+  rpl_user_password:
+    description: 'Contraseña de usuario en RPL 3.0'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Enviar archivos a RPL 3.0
+      shell: bash
+      run: |
+        #!/bin/bash
+        set -e
+
+        # Variables
+        RPL_USER_NAME="${{ inputs.rpl_user_name }}"
+        RPL_USER_PASSWORD="${{ inputs.rpl_user_password }}"
+        RPL_URL="https://rpl3.0.com/api/upload"
+        REPO_DIR="${GITHUB_WORKSPACE}"
+        
+        # Cambiar al directorio del repositorio
+        cd "$REPO_DIR"
+
+        # Encontrar todos los archivos modificados o creados
+        MODIFIED_FILES=$(git diff --name-only HEAD^ HEAD)
+
+        # Estructura de carpetas esperada: {course_id}/{activity_name}/{test}
+
+        #Verificar estructura de carpetas correcta
+        for FILE in $MODIFIED_FILES; do
+          # Extraer la carpeta de la actividad
+          ACTIVITY_DIR=$(dirname "$FILE")
+          ACTIVITY_NAME=$(basename "$ACTIVITY_DIR")
+          
+          # Verificar si la carpeta de la actividad existe
+          if [ ! -d "$ACTIVITY_DIR" ]; then
+            echo "La carpeta de la actividad '$ACTIVITY_NAME' no existe. Saliendo..."
+            exit 1
+          fi
+
+          
+
+
+
+        
+      shell: bash
