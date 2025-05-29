@@ -1,0 +1,11 @@
+{
+  "main.c": {
+    "display": "read_write"
+  },
+  "utils.h": {
+    "display": "read"
+  },
+  "utils.c": {
+    "display": "hidden"
+  }
+} 

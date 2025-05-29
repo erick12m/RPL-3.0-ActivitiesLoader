@@ -1,0 +1,10 @@
+{
+  "category_name": "Data Structures",
+  "category_description": "Data structure implementation and manipulation exercises",
+  "name": "Sorting Algorithm",
+  "description": "Implement various sorting algorithms in C",
+  "language": "c",
+  "points": 200,
+  "active": true,
+  "compilation_flags": "-Wall -Wextra -std=c99"
+} 

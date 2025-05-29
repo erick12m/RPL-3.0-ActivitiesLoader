@@ -1,0 +1,9 @@
+{
+  "category_name": "Demonstrations",
+  "category_description": "Example activities demonstrating platform features",
+  "name": "File Permissions Demo",
+  "language": "python",
+  "description": "Demonstrates different file display modes: read_write, read, and hidden",
+  "points": 50,
+  "active": true
+} 

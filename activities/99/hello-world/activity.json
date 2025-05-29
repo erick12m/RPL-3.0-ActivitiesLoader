@@ -1,0 +1,9 @@
+{
+  "category_name": "Basic Programming",
+  "category_description": "Fundamental programming exercises for beginners",
+  "name": "Hello World",
+  "description": "A simple Hello World program to get started with Python",
+  "language": "python",
+  "points": 100,
+  "active": true
+} 
