@@ -7,10 +7,11 @@ ACTIVITIES_DIR="${ACTIVITIES_DIR:-activities}"
 
 # Colors for logging
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NO_COLOR='\033[0m'
 
 log_info() {
-    echo -e "${NO_COLOR}[INFO]${NO_COLOR} $1" >&2
+    echo -e "${BLUE}[INFO]${NO_COLOR} $1" >&2
 }
 
 log_error() {
