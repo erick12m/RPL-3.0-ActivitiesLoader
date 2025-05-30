@@ -35,7 +35,6 @@ get_changed_activities_files() {
     echo "$changed_activities_files"
 }
 
-# Main function
 main() {
     log_info "Detecting changes in RPL Activities"
     
