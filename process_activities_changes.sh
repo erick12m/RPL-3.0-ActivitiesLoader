@@ -724,6 +724,7 @@ main() {
     log_info "Activities failed: $error_count"
     log_info "Files skipped: ${#skipped_files[@]}"
     log_info "======================================================="
+    echo ""
  
     
     if [[ ${#succeeded_activities[@]} -gt 0 ]]; then
