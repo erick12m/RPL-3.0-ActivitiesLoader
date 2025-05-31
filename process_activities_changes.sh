@@ -541,7 +541,7 @@ process_activity() {
     
     local name=$(jq -r '.name' "$activity_json")
     if [[ "$name" == "null" ]]; then
-        log_error "Missing required field 'name' in activity.json"
+        log_error "Missing required field 'name' in $activity_json"
         return 1
     fi
     
@@ -556,13 +556,13 @@ process_activity() {
     
     # required fields
     if [[ "$category_name" == "null" || "$language" == "null" ]]; then
-        log_error "Missing required fields in activity.json (category_name or category, language)"
+        log_error "Missing required fields in $activity_json (category_name or category, language)"
         return 1
     fi
     
     local category_id
     if ! category_id=$(analyze_category "$course_id" "$category_name" "$category_description"); then
-        log_error "Failed to resolve category: $category_name" 
+        log_error "Failed to resolve category: $category_name for activity in $activity_dir" 
         return 1
     fi
     
@@ -577,7 +577,7 @@ process_activity() {
         if activity_response=$(update_activity "$course_id" "$activity_id" "$category_id" "$name" "$description" "$language" "$points" "$active" "$compilation_flags" "$activity_dir"); then
             log_success "Updated activity: $name"
         else
-            log_error "Failed to update activity: $name"
+            log_error "Failed to update activity: $name in $activity_dir"
             return 1
         fi
     else
@@ -586,11 +586,11 @@ process_activity() {
             log_success "Created activity: $name"
             activity_id=$(echo "$activity_response" | jq -r '.id')
             if [[ "$activity_id" == "null" || -z "$activity_id" ]]; then
-                log_error "Failed to extract activity ID from response"
+                log_error "Failed to extract activity ID from response for activity in $activity_dir"
                 return 1
             fi
         else
-            log_error "Failed to create activity: $name"
+            log_error "Failed to create activity: $name in $activity_dir"
             return 1
         fi
     fi
@@ -608,7 +608,7 @@ process_activity() {
     
     # Check if both test types are present
     if [[ "$has_io_tests" == "true" && "$has_unit_tests" == "true" ]]; then
-        log_warning "Activity: $name has both IO tests and unit tests."
+        log_warning "Activity: $name in $activity_dir has both IO tests and unit tests."
         log_warning "Processing IO tests first - unit tests will be ignored."
         log_warning "Create a new activity for unit test."
         has_unit_tests=false
@@ -617,13 +617,13 @@ process_activity() {
     if [[ "$has_io_tests" == "true" ]]; then
         log_info "Processing IO tests for: $name"
         if ! process_io_tests "$course_id" "$activity_id" "$activity_dir"; then
-            log_error "Failed to process IO tests for: $name"
+            log_error "Failed to process IO tests for: $name in $activity_dir"
             return 1
         fi
     elif [[ "$has_unit_tests" == "true" ]]; then
         log_info "Processing unit tests for: $name"
         if ! process_unit_tests "$course_id" "$activity_id" "$activity_dir"; then
-            log_error "Failed to process unit tests for: $name"
+            log_error "Failed to process unit tests for: $name in $activity_dir"
             return 1
         fi
     else
@@ -660,8 +660,10 @@ main() {
         [[ -n "$line" ]] && changed_files_array+=("$line") 
     done <<< "$changed_files_input"
     
-    # Tracking of processed activities
     local -A processed_activities
+    local -a succeeded_activities
+    local -a failed_activities
+    local -a skipped_files
     local success_count=0
     local error_count=0
     
@@ -679,6 +681,7 @@ main() {
             # Validate that course_id is a number
             if ! [[ "$course_id" =~ ^[0-9]+$ ]]; then
                 log_warning "Incorrect course ID: $file_path (course_id: $course_id). It should be a number. Skipping activity: $activity_name."
+                skipped_files+=("$file_path (invalid course ID)")
                 ((error_count++))
                 continue
             fi
@@ -698,20 +701,60 @@ main() {
             
             # Process the entire activity 
             if process_activity "$course_id" "$activity_dir" ""; then
+                succeeded_activities+=("$activity_name (course: $course_id)")
                 ((success_count++))
             else
+                failed_activities+=("$activity_name (course: $course_id)")
                 ((error_count++))
             fi
         else
             log_warning "Skipping file with unexpected path format: $file_path"
+            skipped_files+=("$file_path (unexpected path format)")
         fi
     done
     
-    log_info "Processing completed: $success_count successful activities, $error_count errors"
+    echo ""
+    echo ""
+    echo ""
+    log_info "======================================================="
+    log_info "FINAL RESULTS"
+    log_info "======================================================="
+    log_info "Total files processed: ${#changed_files_array[@]}"
+    log_info "Activities succeeded: $success_count"
+    log_info "Activities failed: $error_count"
+    log_info "Files skipped: ${#skipped_files[@]}"
+    log_info "======================================================="
+ 
     
+    if [[ ${#succeeded_activities[@]} -gt 0 ]]; then
+        log_success "SUCCEEDED ACTIVITIES:"
+        for activity in "${succeeded_activities[@]}"; do
+            log_success " - $activity"
+        done
+        echo ""
+    fi
+    
+    if [[ ${#failed_activities[@]} -gt 0 ]]; then
+        log_error "FAILED ACTIVITIES:"
+        for activity in "${failed_activities[@]}"; do
+            log_error " - $activity"
+        done
+        echo ""
+    fi
+    
+    if [[ ${#skipped_files[@]} -gt 0 ]]; then
+        log_warning "SKIPPED FILES:"
+        for file in "${skipped_files[@]}"; do
+            log_warning " - $file"
+        done
+        echo ""
+    fi
+        
     if [[ $error_count -gt 0 ]]; then 
         exit 1
     fi
+
+    exit 0
 }
 
 main "$@" 
