@@ -1,50 +1,58 @@
-name: 'Enviar ejercicios a RPL 3.0'
-description: 'Envía archivos modificados/creados en el repositorio a RPL 3.0, a la actividad correspondiente, según el nombre de la carpeta'
+name: 'Send activities to RPL 3.0'
+description: 'Sends modified/created files in the repository to RPL 3.0, to the corresponding activity, according to the course id in folder name'
 inputs: 
-  rpl_user_name:
-    description: 'Usuario en RPL 3.0'
+  rpl_username:
+    description: 'RPL 3.0 username'
     required: true
-  rpl_user_password:
-    description: 'Contraseña de usuario en RPL 3.0'
+  rpl_password:
+    description: 'RPL 3.0 password'
     required: true
+  api_base_url:
+    description: 'RPL 3.0 Activities API base url'
+    required: false
+    default: 'http://192.168.49.2:30002'
+  users_api_base_url:
+    description: 'RPL 3.0 Users API base url'
+    required: false
+    default: 'http://192.168.49.2:30001'
+  activities_dir:
+    description: 'Activities directory in current repository. it defaults to "activities"'
+    required: false
+    default: 'activities'
+
 runs:
   using: "composite"
   steps:
-    - name: Enviar archivos a RPL 3.0
+    - name: Make scripts executable
       shell: bash
       run: |
-        #!/bin/bash
-        set -e
+        chmod +x "${GITHUB_ACTION_PATH}/detect_changes.sh"
+        chmod +x "${GITHUB_ACTION_PATH}/process_activities_changes.sh"
 
-        # Variables
-        RPL_USER_NAME="${{ inputs.rpl_user_name }}"
-        RPL_USER_PASSWORD="${{ inputs.rpl_user_password }}"
-        RPL_URL="https://rpl3.0.com/api/upload"
-        REPO_DIR="${GITHUB_WORKSPACE}"
-        
-        # Cambiar al directorio del repositorio
-        cd "$REPO_DIR"
-
-        # Encontrar todos los archivos modificados o creados
-        MODIFIED_FILES=$(git diff --name-only HEAD^ HEAD)
-
-        # Estructura de carpetas esperada: {course_id}/{activity_name}/{test}
-
-        #Verificar estructura de carpetas correcta
-        for FILE in $MODIFIED_FILES; do
-          # Extraer la carpeta de la actividad
-          ACTIVITY_DIR=$(dirname "$FILE")
-          ACTIVITY_NAME=$(basename "$ACTIVITY_DIR")
-          
-          # Verificar si la carpeta de la actividad existe
-          if [ ! -d "$ACTIVITY_DIR" ]; then
-            echo "La carpeta de la actividad '$ACTIVITY_NAME' no existe. Saliendo..."
-            exit 1
-          fi
-
-          
-
-
-
-        
+    - name: Detect activity changes
+      id: detect-changes
       shell: bash
+      env:
+        ACTIVITIES_DIR: ${{ inputs.activities_dir }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        "${GITHUB_ACTION_PATH}/detect_changes.sh" > activity_changes.txt
+        
+        # Check if there are any changes
+        if [[ -s activity_changes.txt ]]; then
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Process activity changes
+      if: steps.detect-changes.outputs.has_changes == 'true'
+      shell: bash
+      env:
+        RPL_USERNAME: ${{ inputs.rpl_username }}
+        RPL_PASSWORD: ${{ inputs.rpl_password }}
+        API_BASE_URL: ${{ inputs.api_base_url }}
+        USERS_API_BASE_URL: ${{ inputs.users_api_base_url }}
+      run: |
+        cd "$GITHUB_WORKSPACE"
+        cat activity_changes.txt | "${GITHUB_ACTION_PATH}/process_activities_changes.sh"
