@@ -1,7 +1,7 @@
 activities/98/fibonacci/activity.json
 activities/98/fibonacci/fibonacci.c
 activities/98/fibonacci/io_tests.json
-activities/98/fibonacci/unit_tests.txt
+activities/98/fibonacci/unit_tests.c
 activities/98/sorting/activity.json
 activities/98/sorting/files_metadata
 activities/99/file-permissions/activity.json

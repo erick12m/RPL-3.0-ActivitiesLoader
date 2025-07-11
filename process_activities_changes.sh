@@ -287,7 +287,7 @@ create_activity() {
     # Add files to form_data array
     while IFS= read -r -d '' file; do
         local filename=$(basename "$file")
-        if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && "$filename" != "unit_tests.txt" ]]; then
+        if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && ! "$filename" =~ ^unit_tests\..*$ ]]; then
             form_data+=(-F "startingFile=@$file")
         fi
     done < <(find "$activity_dir" -type f -print0)
@@ -331,7 +331,7 @@ update_activity() {
     if [[ -n "$activity_dir" ]]; then
         while IFS= read -r -d '' file; do
             local filename=$(basename "$file")
-            if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && "$filename" != "unit_tests.txt" ]]; then
+            if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && ! "$filename" =~ ^unit_tests\..*$ ]]; then
                 form_data+=(-F "startingFile=@$file")
             fi
         done < <(find "$activity_dir" -type f -print0)
@@ -408,9 +408,17 @@ process_unit_tests() {
     local course_id="$1"
     local activity_id="$2"
     local activity_dir="$3"
-    local unit_tests_file="$activity_dir/unit_tests.txt"
     
-    if [[ ! -f "$unit_tests_file" ]]; then
+    # Find unit tests file with any extension
+    local unit_tests_file=""
+    for file in "$activity_dir"/unit_tests.*; do
+        if [[ -f "$file" ]]; then
+            unit_tests_file="$file"
+            break
+        fi
+    done
+    
+    if [[ -z "$unit_tests_file" ]]; then
         log_info "No unit tests file found for activity"
         return 0
     fi
@@ -602,9 +610,13 @@ process_activity() {
         has_io_tests=true
     fi
     
-    if [[ -f "$activity_dir/unit_tests.txt" ]]; then
-        has_unit_tests=true
-    fi
+    # Check for unit tests file with any extension
+    for file in "$activity_dir"/unit_tests.*; do
+        if [[ -f "$file" ]]; then
+            has_unit_tests=true
+            break
+        fi
+    done
     
     # Check if both test types are present
     if [[ "$has_io_tests" == "true" && "$has_unit_tests" == "true" ]]; then
