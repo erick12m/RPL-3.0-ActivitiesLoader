@@ -19,6 +19,6 @@ jobs:
 
       - name: Run RPL 3.0 Activities Loader Action
         uses: ./
-        env:
-          RPL_USERNAME: ${{ secrets.RPL_USERNAME }}
-          RPL_PASSWORD: ${{ secrets.RPL_PASSWORD }} 
+        with:
+          rpl_username: ${{ secrets.RPL_USERNAME }}
+          rpl_password: ${{ secrets.RPL_PASSWORD }} 

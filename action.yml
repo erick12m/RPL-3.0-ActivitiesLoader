@@ -13,6 +13,12 @@ inputs:
     description: 'Activities directory in current repository. it defaults to "activities"'
     required: false
     default: 'activities'
+  rpl_username:
+    description: 'RPL 3.0 username'
+    required: true
+  rpl_password:
+    description: 'RPL 3.0 password'
+    required: true
 
 runs:
   using: "composite"
@@ -43,9 +49,9 @@ runs:
       if: steps.detect-changes.outputs.has_changes == 'true'
       shell: bash
       env:
-        RPL_USERNAME: ${{ secrets.RPL_USERNAME }}
-        RPL_PASSWORD: ${{ secrets.RPL_PASSWORD }}
-        ACTIVITIES_API_BASE_URL: ${{ inputs.activities_api_base_url }}
+        RPL_USERNAME: ${{ inputs.rpl_username }}
+        RPL_PASSWORD: ${{ inputs.rpl_password }}
+        ACTIVITIES_API_BASE_URL: ${{ inputs.api_base_url }}
         USERS_API_BASE_URL: ${{ inputs.users_api_base_url }}
       run: |
         cd "$GITHUB_WORKSPACE"
