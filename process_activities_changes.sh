@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Config
-API_BASE_URL="${API_BASE_URL:-http://192.168.49.2:30002}"
+ACTIVITIES_API_BASE_URL="${ACTIVITIES_API_BASE_URL:-http://192.168.49.2:30002}"
 USERS_API_BASE_URL="${USERS_API_BASE_URL:-http://192.168.49.2:30001}"
 RPL_USERNAME="${RPL_USERNAME:-testadmin}"
 RPL_PASSWORD="${RPL_PASSWORD:-test}"
@@ -59,7 +59,7 @@ multipart_api_request() {
     local endpoint="$2"
     local form_data_array_name="$3"
     
-    local url="${API_BASE_URL}${endpoint}"
+    local url="${ACTIVITIES_API_BASE_URL}${endpoint}"
     local response
     local http_code
     
@@ -79,6 +79,7 @@ multipart_api_request() {
         echo "$response"
         return 0
     else
+        log_error "Response: $response"
         return 1
     fi
 }
@@ -106,7 +107,7 @@ authenticate() {
         '{username_or_email: $username_or_email, password: $password}')
     
     local response
-    if ! response=$(auth_request "POST" "/api/v3/auth/login" "$auth_data"); then
+    if ! response=$(auth_request "POST" "/auth/login" "$auth_data"); then
         exit 1
     fi
     
@@ -136,7 +137,7 @@ api_request() {
     local data="$3"
     local content_type="${4:-application/json}"
     
-    local url="${API_BASE_URL}${endpoint}"
+    local url="${ACTIVITIES_API_BASE_URL}${endpoint}"
 
     local response
     local http_code
@@ -160,9 +161,10 @@ api_request() {
     
     # Success
     if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
-    echo "$response"
+        echo "$response"
         return 0
     else
+        log_error "Response: $response"
         return 1
     fi
 }
@@ -170,7 +172,7 @@ api_request() {
 get_existing_categories() {
     local course_id="$1"
     log_info "Fetching existing categories for course $course_id"
-    api_request "GET" "/api/v3/courses/$course_id/activityCategories"
+    api_request "GET" "/courses/$course_id/activityCategories"
 }
 
 create_category() {
@@ -188,7 +190,7 @@ create_category() {
             description: $description
         }')
     
-    api_request "POST" "/api/v3/courses/$course_id/activityCategories" "$data"
+    api_request "POST" "/courses/$course_id/activityCategories" "$data"
 }
 
 update_category() {
@@ -210,7 +212,7 @@ update_category() {
             active: $active
         }')
     
-    api_request "PATCH" "/api/v3/courses/$course_id/activityCategories/$category_id" "$data"
+    api_request "PATCH" "/courses/$course_id/activityCategories/$category_id" "$data"
 }
 
 # Check if category exists, create it it's not already created
@@ -251,13 +253,13 @@ analyze_category() {
 get_existing_activities() {
     local course_id="$1"
     log_info "Fetching existing activities for course $course_id"
-    api_request "GET" "/api/v3/courses/$course_id/activities"
+    api_request "GET" "/courses/$course_id/activities"
 }
 
 get_activity_details() {
     local course_id="$1"
     local activity_id="$2"
-    api_request "GET" "/api/v3/courses/$course_id/activities/$activity_id"
+    api_request "GET" "/courses/$course_id/activities/$activity_id"
 }
 
 create_activity() {
@@ -293,7 +295,7 @@ create_activity() {
     done < <(find "$activity_dir" -type f -print0)
     
     local response
-    if response=$(multipart_api_request "POST" "/api/v3/courses/$course_id/activities" "form_data"); then
+    if response=$(multipart_api_request "POST" "/courses/$course_id/activities" "form_data"); then
         echo "$response"
         return 0
     else
@@ -338,7 +340,7 @@ update_activity() {
     fi
     
     local response
-    if response=$(multipart_api_request "PATCH" "/api/v3/courses/$course_id/activities/$activity_id" "form_data"); then
+    if response=$(multipart_api_request "PATCH" "/courses/$course_id/activities/$activity_id" "form_data"); then
         echo "$response"
         return 0
     else
@@ -481,7 +483,7 @@ create_io_test() {
             test_out: $test_out
         }')
     
-    api_request "POST" "/api/v3/courses/$course_id/activities/$activity_id/iotests" "$data"
+    api_request "POST" "/courses/$course_id/activities/$activity_id/iotests" "$data"
 }
 
 update_io_test() {
@@ -502,7 +504,7 @@ update_io_test() {
             test_out: $test_out
         }')
     
-    api_request "PUT" "/api/v3/courses/$course_id/activities/$activity_id/iotests/$io_test_id" "$data"
+    api_request "PUT" "/courses/$course_id/activities/$activity_id/iotests/$io_test_id" "$data"
 }
 
 create_unit_tests() {
@@ -516,7 +518,7 @@ create_unit_tests() {
             unit_test_code: $code
         }')
     
-    api_request "POST" "/api/v3/courses/$course_id/activities/$activity_id/unittests" "$data"
+    api_request "POST" "/courses/$course_id/activities/$activity_id/unittests" "$data"
     
 }
 
@@ -531,7 +533,7 @@ update_unit_tests() {
             unit_test_code: $code
         }')
     
-    api_request "PUT" "/api/v3/courses/$course_id/activities/$activity_id/unittests" "$data"
+    api_request "PUT" "/courses/$course_id/activities/$activity_id/unittests" "$data"
 }
 
 process_activity() {
