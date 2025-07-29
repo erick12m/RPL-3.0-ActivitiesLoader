@@ -1,20 +1,14 @@
 name: 'Send activities to RPL 3.0'
 description: 'Sends modified/created files in the repository to RPL 3.0, to the corresponding activity, according to the course id in folder name'
 inputs: 
-  rpl_username:
-    description: 'RPL 3.0 username'
-    required: true
-  rpl_password:
-    description: 'RPL 3.0 password'
-    required: true
   api_base_url:
     description: 'RPL 3.0 Activities API base url'
     required: false
-    default: 'http://192.168.49.2:30002'
+    default: 'https://beta.myrpl.ar/activities_api'
   users_api_base_url:
     description: 'RPL 3.0 Users API base url'
     required: false
-    default: 'http://192.168.49.2:30001'
+    default: 'https://beta.myrpl.ar/users_api'
   activities_dir:
     description: 'Activities directory in current repository. it defaults to "activities"'
     required: false
@@ -49,9 +43,9 @@ runs:
       if: steps.detect-changes.outputs.has_changes == 'true'
       shell: bash
       env:
-        RPL_USERNAME: ${{ inputs.rpl_username }}
-        RPL_PASSWORD: ${{ inputs.rpl_password }}
-        API_BASE_URL: ${{ inputs.api_base_url }}
+        RPL_USERNAME: ${{ secrets.RPL_USERNAME }}
+        RPL_PASSWORD: ${{ secrets.RPL_PASSWORD }}
+        ACTIVITIES_API_BASE_URL: ${{ inputs.activities_api_base_url }}
         USERS_API_BASE_URL: ${{ inputs.users_api_base_url }}
       run: |
         cd "$GITHUB_WORKSPACE"

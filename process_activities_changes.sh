@@ -165,6 +165,7 @@ api_request() {
         return 0
     else
         log_error "Response: $response"
+        echo "$response"
         return 1
     fi
 }
@@ -236,14 +237,18 @@ analyze_category() {
     # Category don't exist, create it
     log_info "Category '$category_name' not found, creating it"
     
-    
     local response=$(create_category "$course_id" "$category_name" "$category_description")
     
     if [[ $? -eq 0 ]]; then
         local new_category_id=$(echo "$response" | jq -r '.id')
-        log_success "Created category '$category_name' with ID: $new_category_id"
-        echo "$new_category_id"
-        return 0
+        if [[ -n "$new_category_id" && "$new_category_id" != "null" ]]; then
+            log_success "Created category '$category_name' with ID: $new_category_id"
+            echo "$new_category_id"
+            return 0
+        else
+            log_error "Failed to extract category ID from response"
+            return 1
+        fi
     else
         log_error "Failed to create category: $category_name"
         return 1
@@ -287,12 +292,14 @@ create_activity() {
     fi
     
     # Add files to form_data array
-    while IFS= read -r -d '' file; do
-        local filename=$(basename "$file")
-        if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && ! "$filename" =~ ^unit_tests\..*$ ]]; then
-            form_data+=(-F "startingFile=@$file")
-        fi
-    done < <(find "$activity_dir" -type f -print0)
+    if [[ -n "$activity_dir" ]]; then
+        while IFS= read -r -d '' file; do
+            local filename=$(basename "$file")
+            if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && ! "$filename" =~ ^unit_tests\..*$ ]]; then
+                form_data+=(-F "starting_files=@$file")
+            fi
+        done < <(find "$activity_dir" -type f -print0)
+    fi
     
     local response
     if response=$(multipart_api_request "POST" "/courses/$course_id/activities" "form_data"); then
@@ -334,7 +341,7 @@ update_activity() {
         while IFS= read -r -d '' file; do
             local filename=$(basename "$file")
             if [[ "$filename" != "activity.json" && "$filename" != "io_tests.json" && ! "$filename" =~ ^unit_tests\..*$ ]]; then
-                form_data+=(-F "startingFile=@$file")
+                form_data+=(-F "starting_files=@$file")
             fi
         done < <(find "$activity_dir" -type f -print0)
     fi
@@ -361,7 +368,7 @@ process_io_tests() {
     fi
     
     local activity_details=$(get_activity_details "$course_id" "$activity_id")
-    local unit_tests_data=$(echo "$activity_details" | jq -r '.activity_unittests // empty')
+    local unit_tests_data=$(echo "$activity_details" | jq -r '.activity_unit_tests_content // empty')
     if [[ -n "$unit_tests_data" ]]; then
         log_warning "Activity: $name has unit tests. Cannot add IO tests."
         return 0
@@ -369,7 +376,7 @@ process_io_tests() {
     
     log_info "Processing IO tests from $io_tests_file"
     
-    local existing_tests=$(echo "$activity_details" | jq -r '.activity_iotests // []')
+    local existing_tests=$(echo "$activity_details" | jq -r '.activity_io_tests // []')
     
     # Read and process each io_test
     local test_count=$(jq '. | length' "$io_tests_file")
@@ -427,7 +434,7 @@ process_unit_tests() {
     
     # Check if activity has IO tests
     local activity_details=$(get_activity_details "$course_id" "$activity_id")
-    local has_io_tests=$(echo "$activity_details" | jq -r '.activity_iotests | length > 0')
+    local has_io_tests=$(echo "$activity_details" | jq -r '.activity_io_tests | length > 0')
     
     if [[ "$has_io_tests" == "true" ]]; then
         log_warning "Activity: $name has IO tests. Cannot add unit tests."
@@ -439,7 +446,7 @@ process_unit_tests() {
     local unit_test_code=$(cat "$unit_tests_file")
     
     # Check if unit tests already exist
-    local activity_unit_tests=$(echo "$activity_details" | jq -r '.activity_unittests // empty')
+    local activity_unit_tests=$(echo "$activity_details" | jq -r '.activity_unit_tests_content // empty')
     local has_unit_tests="false"
     if [[ -n "$activity_unit_tests" ]]; then
         has_unit_tests="true"
@@ -455,11 +462,23 @@ process_unit_tests() {
         fi
     else
         log_info "Creating unit tests"
-        if local response=$(create_unit_tests "$course_id" "$activity_id" "$unit_test_code"); then
+        local response
+        if response=$(create_unit_tests "$course_id" "$activity_id" "$unit_test_code"); then
             log_success "Created unit tests"
         else
-            log_error "Failed to create unit tests"
-            return 1
+            # Check if the error is because unit tests already exist
+            if [[ "$response" == *"Unit tests already exists"* ]]; then
+                log_info "Unit tests already exist for this activity, trying to update instead"
+                if response=$(update_unit_tests "$course_id" "$activity_id" "$unit_test_code"); then
+                    log_success "Updated existing unit tests"
+                else
+                    log_error "Failed to update unit tests"
+                    return 1
+                fi
+            else
+                log_error "Failed to create unit tests"
+                return 1
+            fi
         fi
     fi
     
@@ -515,7 +534,7 @@ create_unit_tests() {
     local data=$(jq -n \
         --arg code "$unit_test_code" \
         '{
-            unit_test_code: $code
+            unit_tests_code: $code
         }')
     
     api_request "POST" "/courses/$course_id/activities/$activity_id/unittests" "$data"
@@ -530,7 +549,7 @@ update_unit_tests() {
     local data=$(jq -n \
         --arg code "$unit_test_code" \
         '{
-            unit_test_code: $code
+            unit_tests_code: $code
         }')
     
     api_request "PUT" "/courses/$course_id/activities/$activity_id/unittests" "$data"
@@ -641,7 +660,7 @@ process_activity() {
             return 1
         fi
     else
-        log_info "No test files found for: $name"
+        log_warning "No test files found for: $name"
     fi
     
     log_info "Completed processing activity: $name"

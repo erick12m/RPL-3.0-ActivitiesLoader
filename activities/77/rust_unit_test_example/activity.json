@@ -1,0 +1,10 @@
+{
+    "category_name": "Rust",
+    "category_description": "Rust programming language exercises",
+    "name": "Demo de Rust - Unit Test",
+    "description": "Implmenta una suma de 2 numeros",
+    "language": "rust",
+    "points": 10,
+    "active": true,
+    "compilation_flags": "-g -O2 -std=c99 -Wall -Wextra"
+} 
