@@ -26,4 +26,4 @@ fn suma_devuelve_resultado_esperado_2() {
         obtained, expected,
         "El resultado de suma(10, 20) no es igual a 30"
     );
-}
+} 
