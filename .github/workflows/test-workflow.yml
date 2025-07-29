@@ -1,0 +1,24 @@
+name: Test RPL 3.0 Activities Loader Action
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run RPL 3.0 Activities Loader Action
+        uses: ./
+        env:
+          RPL_USERNAME: ${{ secrets.RPL_USERNAME }}
+          RPL_PASSWORD: ${{ secrets.RPL_PASSWORD }} 
