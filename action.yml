@@ -1,5 +1,5 @@
 name: 'Send activities to RPL 3.0'
-description: 'Sends modified/created files in the repository to RPL 3.0, to the corresponding activity, according to the course id in folder name'
+description: 'Sends modified/created activities in the repository to RPL 3.0'
 inputs: 
   api_base_url:
     description: 'RPL 3.0 Activities API base url'
