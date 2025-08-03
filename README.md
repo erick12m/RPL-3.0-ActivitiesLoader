@@ -41,11 +41,12 @@ activities/
     "description": "A simple Hello World program to get started with Python",
     "language": "python",
     "points": 100,
-    "active": true
+    "active": true,
+    "compilation_flags": ""
   }
   ```
 
-- **`files_metadata`**: Defines the files permissions for students. Display can be: `read_only`, `read_write`, `hidden`. 
+- **`files_metadata`**: Defines the files permissions for students. Display can be: `read`, `read_write`, `hidden`. 
   ```json
   {
     "main.py": {
