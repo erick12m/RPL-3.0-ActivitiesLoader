@@ -4,11 +4,11 @@ inputs:
   api_base_url:
     description: 'RPL 3.0 Activities API base url'
     required: false
-    default: 'https://beta.myrpl.ar/activities_api'
+    default: 'https://myrpl.ar/activities_api'
   users_api_base_url:
     description: 'RPL 3.0 Users API base url'
     required: false
-    default: 'https://beta.myrpl.ar/users_api'
+    default: 'https://myrpl.ar/users_api'
   activities_dir:
     description: 'Activities directory in current repository. it defaults to "activities"'
     required: false
